@@ -11,7 +11,7 @@ import os
 import datetime
 
 class Log:
-    def __init__(self, device, directory="/home/pi/logs" ):
+    def __init__(self, device, directory="logs" ):
         """初始化日志类，创建日志目录和文件"""
         self.directory = directory
         self.device = device
