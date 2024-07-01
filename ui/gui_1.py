@@ -23,13 +23,15 @@ SCRN_HEIGHT_CENTER = SCRN_HEIGHT/2
 
 G_WARNING_THRESHOLD = 4.0
 
+SPEED_UNITS_TEXT = "m/s"
+HEIGHT_UNITS_TEXT = "m"
 G_WARNING_TEXT = "G-FORCE WARNING"
 FREEFALL_TIME_TEXT = "FREEFALL TIME " # must have following space
 
 root = tk.Tk()
 
 class gui_1(tk.Canvas):
-    def __init__(self, master):
+    def __init__(self, master, size=SIZE):
         tk.Canvas.__init__(self, master)
         
         self.speed = 0
@@ -37,9 +39,7 @@ class gui_1(tk.Canvas):
         self.pitch = 0 # limit +90 ~ -90
         self.roll = 0 # limit +180 ~ -180, bank to right is positive
         self.g_force = 4.2
-        self.ffl_secs = 100
-        
-        self.spd_list = []
+        self.ffl_secs = 100 # should be greater than 0, less than 0 force display 0
         
         self.grid()
 
@@ -53,14 +53,14 @@ class gui_1(tk.Canvas):
         self.update_vals(self.speed, self.altitude, self.pitch, self.roll, self.g_force, self.ffl_secs)
 
     def draw_numline(self, cur_val, cen_val, ratio, type=1):
-        self.create_text(SCRN_WIDTH_CENTER-type*(SIZE*23.5), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, text=cur_val, anchor=(tk.E if type==1 else tk.W), tags=("spd_line" if type==1 else "alt_line"))
+        self.create_text(SCRN_WIDTH_CENTER-type*(SIZE*23.5), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, text=int(cur_val), anchor=(tk.E if type==1 else tk.W), tags=("spd_line" if type==1 else "alt_line"))
         self.create_line(SCRN_WIDTH_CENTER-type*(SIZE*23), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, SCRN_WIDTH_CENTER-type*(SIZE*22), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, tags=("spd_line" if type==1 else "alt_line"))
 
     def draw_speedometer(self, speed=0):
         base_size = SIZE*26
 
         self.create_line(SCRN_WIDTH_CENTER-(base_size), SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER-(22*SIZE),SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER-(22*SIZE),SCRN_HEIGHT_CENTER+(SIZE*11.5), SCRN_WIDTH_CENTER-(base_size),SCRN_HEIGHT_CENTER+(SIZE*11.5))
-        self.create_text(SCRN_WIDTH_CENTER-(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="km/h")
+        self.create_text(SCRN_WIDTH_CENTER-(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="m/s")
         self.create_polygon(SCRN_WIDTH_CENTER-(SIZE*21), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER-(SIZE*20), SCRN_HEIGHT_CENTER+(SIZE/1.732),SCRN_WIDTH_CENTER-(SIZE*20), SCRN_HEIGHT_CENTER-(SIZE/1.732), fill="green")
         self.create_text(SCRN_WIDTH_CENTER-(SIZE*16.5), SCRN_HEIGHT_CENTER, text=speed, font=(FONT, SIZE*2), tags="main_spd")
 
@@ -80,13 +80,13 @@ class gui_1(tk.Canvas):
             cur_spd += 10
             self.draw_numline(cur_spd, self.speed, ratio, 1)
         
-        self.itemconfigure("main_spd", text=self.speed)
+        self.itemconfigure("main_spd", text=int(self.speed))
 
     def draw_altimeter(self, altitude=0):
         base_size = SIZE*26
 
         self.create_line(SCRN_WIDTH_CENTER+(base_size), SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER+(22*SIZE),SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER+(22*SIZE),SCRN_HEIGHT_CENTER+(SIZE*11.5), SCRN_WIDTH_CENTER+(base_size),SCRN_HEIGHT_CENTER+(SIZE*11.5))
-        self.create_text(SCRN_WIDTH_CENTER+(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="ft")
+        self.create_text(SCRN_WIDTH_CENTER+(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="m")
         self.create_polygon(SCRN_WIDTH_CENTER+(SIZE*21), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER+(SIZE*20), SCRN_HEIGHT_CENTER+(SIZE/1.732),SCRN_WIDTH_CENTER+(SIZE*20), SCRN_HEIGHT_CENTER-(SIZE/1.732), fill="green")
         self.create_text(SCRN_WIDTH_CENTER+(SIZE*16.5), SCRN_HEIGHT_CENTER, text=altitude, font=(FONT, SIZE*2), tags="main_alt")
 
@@ -106,7 +106,7 @@ class gui_1(tk.Canvas):
             cur_alt += 500
             self.draw_numline(cur_alt, self.altitude, ratio, -1)
         
-        self.itemconfigure("main_alt", text=self.altitude)
+        self.itemconfigure("main_alt", text=int(self.altitude))
     
     def draw_horizon(self): # temporary, will be depreciated when update_horizon() works
         self.create_line(SCRN_WIDTH_CENTER-(SIZE*3), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER-(SIZE*13), SCRN_HEIGHT_CENTER)
@@ -132,14 +132,14 @@ class gui_1(tk.Canvas):
         self.itemconfigure("g_warn", text=(G_WARNING_TEXT if self.g_force > G_WARNING_THRESHOLD else ""))
     
     def draw_ffl_time_indic(self):
-        self.create_text(SCRN_WIDTH_CENTER-SIZE*27, SCRN_HEIGHT_CENTER+SIZE*14, text=FREEFALL_TIME_TEXT + f"{self.ffl_secs//60:02}:{self.ffl_secs%60:02}", tags="ffl_time")
+        self.create_text(SCRN_WIDTH_CENTER-SIZE*27, SCRN_HEIGHT_CENTER+SIZE*14, text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}", tags="ffl_time")
 
     def update_ffl_time_indic(self):
-        self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{self.ffl_secs//60:02}:{self.ffl_secs%60:02}")
+        self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}")
 
     def update_vals(self, speed, altitude, pitch, roll, g_force, ffl_secs):
         self.speed = speed
-        self.altitude = altitude
+        self.altitude = max(altitude, 0)
         self.pitch = pitch
         self.roll = roll
         self.g_force = g_force
@@ -150,16 +150,40 @@ class gui_1(tk.Canvas):
         self.update_horizon()
         self.update_g_force_indic()
         self.update_ffl_time_indic()
-        
+
+class test_but_one(tk.Button):
+    def __init__(self, text, command):
+        tk.Button.__init__(self, text=text, command=command)
+        self.prev_alt = 0
+
+    def update_(self, altitude):
+        global time
+        one.update_vals((self.prev_alt - altitude)*10,altitude,3,4,5,6)
+        self.prev_alt = altitude
+        time += 1
+        self.after(10, self.update_, float(heights[time].split()[2][:-1]))
 
 if __name__ == "__main__":
+    
+    data = open("test.txt", "r")
+    heights = data.readlines()
+
+    while True:
+        try:
+            heights.remove('\n')
+        except:
+            break
+
     # root.configure(height=1080, width=1920)
-    one = gui_1(master=root)
+    one = gui_1(master=root, size=SIZE)
     one.configure(height=SCRN_HEIGHT, width=SCRN_WIDTH)
     one.grid_propagate(0)
 
+    time = 0
 
-    test_but = tk.Button(text="Random", command=lambda: one.update_vals(speed=random.randint(0, 1000), altitude=random.randint(0,10000), pitch=random.randint(-90, 90), g_force=random.randint(0,100)/10, roll=random.randint(0,0), ffl_secs=random.randint(0,1200)))
+    test_but = tk.Button(text="Random", command=lambda: one.update_vals(speed=random.randint(0, 1000), altitude=random.randint(0,10000), pitch=random.randint(-90, 90), roll=random.randint(0,0), g_force=random.randint(0,100)/10, ffl_secs=random.randint(0,1200)))
+    test_but_1 = test_but_one(text="Log", command=lambda: test_but_1.update_(float(heights[time].split()[2][:-1])))
     test_but.grid(row=10)
+    test_but_1.grid(row=11)
 
     root.mainloop()
