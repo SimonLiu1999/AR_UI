@@ -14,9 +14,9 @@ FONT = "Times New Roman"
 
 SIZE = 10
 SCRN_HEIGHT = 1080
-SCRN_HEIGHT = 540
+SCRN_HEIGHT = 540 # testing, comment out for production
 SCRN_WIDTH = 1920
-SCRN_WIDTH = 960
+SCRN_WIDTH = 960 # testing, comment out for production
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH/2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT/2
@@ -31,19 +31,24 @@ FREEFALL_TIME_TEXT = "FREEFALL TIME " # must have following space
 root = tk.Tk()
 
 class gui_1(tk.Canvas):
-    def __init__(self, master, size=SIZE):
-        tk.Canvas.__init__(self, master)
+    def __init__(self, master, size=SIZE, testing=False):
+        tk.Canvas.__init__(self, master, bg="light gray" if testing else "black")
         
         self.speed = 0
-        self.altitude = 3500
+        self.altitude = 0
         self.pitch = 0 # limit +90 ~ -90
         self.roll = 0 # limit +180 ~ -180, bank to right is positive
         self.g_force = 4.2
         self.ffl_secs = 100 # should be greater than 0, less than 0 force display 0
+
+        self.size = size
+        self.center_width=SCRN_WIDTH_CENTER
+        self.center_height=SCRN_HEIGHT_CENTER
+        self.fg_color = "black" if testing else "green"
         
         self.grid()
 
-        # self.create_text(SCRN_WIDTH_CENTER, SCRN_HEIGHT_CENTER, text="CENTER")
+        # self.create_text(self.center_width, self.center_height, text="CENTER")
         self.draw_speedometer(self.speed)
         self.draw_altimeter(self.altitude)
         self.draw_horizon()
@@ -53,16 +58,16 @@ class gui_1(tk.Canvas):
         self.update_vals(self.speed, self.altitude, self.pitch, self.roll, self.g_force, self.ffl_secs)
 
     def draw_numline(self, cur_val, cen_val, ratio, type=1):
-        self.create_text(SCRN_WIDTH_CENTER-type*(SIZE*23.5), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, text=int(cur_val), anchor=(tk.E if type==1 else tk.W), tags=("spd_line" if type==1 else "alt_line"))
-        self.create_line(SCRN_WIDTH_CENTER-type*(SIZE*23), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, SCRN_WIDTH_CENTER-type*(SIZE*22), SCRN_HEIGHT_CENTER-(cur_val-cen_val)*ratio, tags=("spd_line" if type==1 else "alt_line"))
+        self.create_text(self.center_width-type*(self.size*23.5), self.center_height-(cur_val-cen_val)*ratio, text=int(cur_val), anchor=(tk.E if type==1 else tk.W), fill=self.fg_color, tags=("spd_line" if type==1 else "alt_line"))
+        self.create_line(self.center_width-type*(self.size*23), self.center_height-(cur_val-cen_val)*ratio, self.center_width-type*(self.size*22), self.center_height-(cur_val-cen_val)*ratio, fill=self.fg_color, tags=("spd_line" if type==1 else "alt_line"))
 
     def draw_speedometer(self, speed=0):
-        base_size = SIZE*26
+        base_size = self.size*26
 
-        self.create_line(SCRN_WIDTH_CENTER-(base_size), SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER-(22*SIZE),SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER-(22*SIZE),SCRN_HEIGHT_CENTER+(SIZE*11.5), SCRN_WIDTH_CENTER-(base_size),SCRN_HEIGHT_CENTER+(SIZE*11.5))
-        self.create_text(SCRN_WIDTH_CENTER-(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="m/s")
-        self.create_polygon(SCRN_WIDTH_CENTER-(SIZE*21), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER-(SIZE*20), SCRN_HEIGHT_CENTER+(SIZE/1.732),SCRN_WIDTH_CENTER-(SIZE*20), SCRN_HEIGHT_CENTER-(SIZE/1.732), fill="green")
-        self.create_text(SCRN_WIDTH_CENTER-(SIZE*16.5), SCRN_HEIGHT_CENTER, text=speed, font=(FONT, SIZE*2), tags="main_spd")
+        self.create_line(self.center_width-(base_size), self.center_height-(self.size*11.5), self.center_width-(22*self.size),self.center_height-(self.size*11.5), self.center_width-(22*self.size),self.center_height+(self.size*11.5), self.center_width-(base_size),self.center_height+(self.size*11.5), fill=self.fg_color)
+        self.create_text(self.center_width-(self.size*24),self.center_height-(self.size*13), text="m/s", fill=self.fg_color)
+        self.create_polygon(self.center_width-(self.size*21), self.center_height, self.center_width-(self.size*20), self.center_height+(self.size/1.732),self.center_width-(self.size*20), self.center_height-(self.size/1.732), fill=self.fg_color)
+        self.create_text(self.center_width-(self.size*16.5), self.center_height, text=speed, font=(FONT, self.size*2), fill=self.fg_color, tags="main_spd")
 
     def update_speedometer(self):
         ratio = 3.5
@@ -83,12 +88,12 @@ class gui_1(tk.Canvas):
         self.itemconfigure("main_spd", text=int(self.speed))
 
     def draw_altimeter(self, altitude=0):
-        base_size = SIZE*26
+        base_size = self.size*26
 
-        self.create_line(SCRN_WIDTH_CENTER+(base_size), SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER+(22*SIZE),SCRN_HEIGHT_CENTER-(SIZE*11.5), SCRN_WIDTH_CENTER+(22*SIZE),SCRN_HEIGHT_CENTER+(SIZE*11.5), SCRN_WIDTH_CENTER+(base_size),SCRN_HEIGHT_CENTER+(SIZE*11.5))
-        self.create_text(SCRN_WIDTH_CENTER+(SIZE*24),SCRN_HEIGHT_CENTER-(SIZE*13), text="m")
-        self.create_polygon(SCRN_WIDTH_CENTER+(SIZE*21), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER+(SIZE*20), SCRN_HEIGHT_CENTER+(SIZE/1.732),SCRN_WIDTH_CENTER+(SIZE*20), SCRN_HEIGHT_CENTER-(SIZE/1.732), fill="green")
-        self.create_text(SCRN_WIDTH_CENTER+(SIZE*16.5), SCRN_HEIGHT_CENTER, text=altitude, font=(FONT, SIZE*2), tags="main_alt")
+        self.create_line(self.center_width+(base_size), self.center_height-(self.size*11.5), self.center_width+(22*self.size),self.center_height-(self.size*11.5), self.center_width+(22*self.size),self.center_height+(self.size*11.5), self.center_width+(base_size),self.center_height+(self.size*11.5), fill=self.fg_color)
+        self.create_text(self.center_width+(self.size*24),self.center_height-(self.size*13), text="m", fill=self.fg_color)
+        self.create_polygon(self.center_width+(self.size*21), self.center_height, self.center_width+(self.size*20), self.center_height+(self.size/1.732),self.center_width+(self.size*20), self.center_height-(self.size/1.732), fill=self.fg_color)
+        self.create_text(self.center_width+(self.size*16.5), self.center_height, text=altitude, font=(FONT, self.size*2), fill=self.fg_color, tags="main_alt")
 
     def update_altimeter(self):
         ratio = 3.5/50
@@ -109,36 +114,38 @@ class gui_1(tk.Canvas):
         self.itemconfigure("main_alt", text=int(self.altitude))
     
     def draw_horizon(self): # temporary, will be depreciated when update_horizon() works
-        self.create_line(SCRN_WIDTH_CENTER-(SIZE*3), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER-(SIZE*13), SCRN_HEIGHT_CENTER)
-        self.create_line(SCRN_WIDTH_CENTER+(SIZE*3), SCRN_HEIGHT_CENTER, SCRN_WIDTH_CENTER+(SIZE*13), SCRN_HEIGHT_CENTER)
-        self.create_line(SCRN_WIDTH_CENTER-(SIZE*2), SCRN_HEIGHT_CENTER+(SIZE*1.5), SCRN_WIDTH_CENTER-(SIZE*1), SCRN_HEIGHT_CENTER+(SIZE*1.5), SCRN_WIDTH_CENTER-(SIZE*0.5), SCRN_HEIGHT_CENTER+(SIZE*2.5), SCRN_WIDTH_CENTER, SCRN_HEIGHT_CENTER+(SIZE*1.5), SCRN_WIDTH_CENTER+(SIZE*0.5), SCRN_HEIGHT_CENTER+(SIZE*2.5), SCRN_WIDTH_CENTER+(SIZE*1), SCRN_HEIGHT_CENTER+(SIZE*1.5), SCRN_WIDTH_CENTER+(SIZE*2), SCRN_HEIGHT_CENTER+(SIZE*1.5))
+        self.create_line(self.center_width-(self.size*3), self.center_height, self.center_width-(self.size*13), self.center_height, fill=self.fg_color)
+        self.create_line(self.center_width+(self.size*3), self.center_height, self.center_width+(self.size*13), self.center_height, fill=self.fg_color)
+        self.create_line(self.center_width-(self.size*2), self.center_height+(self.size*1.5), self.center_width-(self.size*1), self.center_height+(self.size*1.5), self.center_width-(self.size*0.5), self.center_height+(self.size*2.5), self.center_width, self.center_height+(self.size*1.5), self.center_width+(self.size*0.5), self.center_height+(self.size*2.5), self.center_width+(self.size*1), self.center_height+(self.size*1.5), self.center_width+(self.size*2), self.center_height+(self.size*1.5), fill=self.fg_color)
         for i in (5, -5):
-            self.create_line(SCRN_WIDTH_CENTER-(SIZE*3), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), SCRN_WIDTH_CENTER-(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), dash=1)
-            self.create_line(SCRN_WIDTH_CENTER+(SIZE*3), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), SCRN_WIDTH_CENTER+(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), dash=1)
-            self.create_line(SCRN_WIDTH_CENTER-(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), SCRN_WIDTH_CENTER-(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i)-SIZE*0.6, dash=1)
-            self.create_line(SCRN_WIDTH_CENTER+(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i), SCRN_WIDTH_CENTER+(SIZE*8), SCRN_HEIGHT_CENTER-(SIZE*2.3*i)-SIZE*0.6, dash=1)
-            self.create_text(SCRN_WIDTH_CENTER-(SIZE*9), SCRN_HEIGHT_CENTER-(SIZE*2.3*i)-SIZE*0.2, text=i, anchor=tk.E)
-            self.create_text(SCRN_WIDTH_CENTER+(SIZE*9), SCRN_HEIGHT_CENTER-(SIZE*2.3*i)-SIZE*0.2, text=i, anchor=tk.W)
+            self.create_line(self.center_width-(self.size*3), self.center_height-(self.size*2.3*i), self.center_width-(self.size*8), self.center_height-(self.size*2.3*i), dash=1, fill=self.fg_color)
+            self.create_line(self.center_width+(self.size*3), self.center_height-(self.size*2.3*i), self.center_width+(self.size*8), self.center_height-(self.size*2.3*i), dash=1, fill=self.fg_color)
+            self.create_line(self.center_width-(self.size*8), self.center_height-(self.size*2.3*i), self.center_width-(self.size*8), self.center_height-(self.size*2.3*i)-self.size*0.6, dash=1, fill=self.fg_color)
+            self.create_line(self.center_width+(self.size*8), self.center_height-(self.size*2.3*i), self.center_width+(self.size*8), self.center_height-(self.size*2.3*i)-self.size*0.6, dash=1, fill=self.fg_color)
+            self.create_text(self.center_width-(self.size*9), self.center_height-(self.size*2.3*i)-self.size*0.2, text=i, anchor=tk.E, fill=self.fg_color)
+            self.create_text(self.center_width+(self.size*9), self.center_height-(self.size*2.3*i)-self.size*0.2, text=i, anchor=tk.W, fill=self.fg_color)
 
     def update_horizon(self):
         pass
 
     def draw_g_force_indic(self):
-        self.create_text(SCRN_WIDTH_CENTER, SCRN_HEIGHT_CENTER+(SIZE*22), text="%2.1f G"%(self.g_force), tags="g_num")
-        self.create_text(SCRN_WIDTH_CENTER, SCRN_HEIGHT_CENTER+(SIZE*20), text=G_WARNING_TEXT, fill="red", tags="g_warn")
+        self.create_text(self.center_width, self.center_height+(self.size*22), text="%2.1f G"%(self.g_force), fill=self.fg_color, tags="g_num")
+        self.create_text(self.center_width, self.center_height+(self.size*20), text=G_WARNING_TEXT, fill="red", tags="g_warn")
 
     def update_g_force_indic(self):
         self.itemconfigure("g_num", text="%2.1f G"%(self.g_force))
         self.itemconfigure("g_warn", text=(G_WARNING_TEXT if self.g_force > G_WARNING_THRESHOLD else ""))
     
     def draw_ffl_time_indic(self):
-        self.create_text(SCRN_WIDTH_CENTER-SIZE*27, SCRN_HEIGHT_CENTER+SIZE*14, text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}", tags="ffl_time")
+        self.create_text(self.center_width-self.size*27, self.center_height+self.size*14, text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}", fill=self.fg_color, tags="ffl_time")
 
     def update_ffl_time_indic(self):
         self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}")
 
     def update_vals(self, speed, altitude, pitch, roll, g_force, ffl_secs):
-        self.speed = speed
+        self.alpha = 0.01 # filtering weight
+
+        self.speed = self.speed*(1-self.alpha) + speed*self.alpha
         self.altitude = max(altitude, 0)
         self.pitch = pitch
         self.roll = roll
@@ -161,7 +168,7 @@ class test_but_one(tk.Button):
         one.update_vals((self.prev_alt - altitude)*10,altitude,3,4,5,6)
         self.prev_alt = altitude
         time += 1
-        self.after(10, self.update_, float(heights[time].split()[2][:-1]))
+        self.after(100, self.update_, float(heights[time].split()[2][:-1]))
 
 if __name__ == "__main__":
     
@@ -175,7 +182,7 @@ if __name__ == "__main__":
             break
 
     # root.configure(height=1080, width=1920)
-    one = gui_1(master=root, size=SIZE)
+    one = gui_1(master=root, size=SIZE, testing=True)
     one.configure(height=SCRN_HEIGHT, width=SCRN_WIDTH)
     one.grid_propagate(0)
 
