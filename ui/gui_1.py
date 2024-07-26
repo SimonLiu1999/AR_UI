@@ -14,9 +14,9 @@ FONT = "Times New Roman"
 
 SIZE = 10
 SCRN_HEIGHT = 1080
-SCRN_HEIGHT = 540 # testing, comment out for production
+SCRN_HEIGHT = 900 # testing, comment out for production
 SCRN_WIDTH = 1920
-SCRN_WIDTH = 960 # testing, comment out for production
+SCRN_WIDTH = 1920 # testing, comment out for production
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH/2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT/2
@@ -34,7 +34,7 @@ class gui_1(tk.Canvas):
     def __init__(self, master, size=SIZE, testing=False):
         tk.Canvas.__init__(self, master, bg="light gray" if testing else "black")
         
-        self.speed = 0
+        self.speed = 20
         self.altitude = 0
         self.pitch = 0 # limit +90 ~ -90
         self.roll = 0 # limit +180 ~ -180, bank to right is positive
@@ -58,6 +58,7 @@ class gui_1(tk.Canvas):
         self.update_vals(self.speed, self.altitude, self.pitch, self.roll, self.g_force, self.ffl_secs)
 
     def draw_numline(self, cur_val, cen_val, ratio, type=1):
+        print(cur_val, cen_val, ratio, type)
         self.create_text(self.center_width-type*(self.size*23.5), self.center_height-(cur_val-cen_val)*ratio, text=int(cur_val), anchor=(tk.E if type==1 else tk.W), fill=self.fg_color, tags=("spd_line" if type==1 else "alt_line"))
         self.create_line(self.center_width-type*(self.size*23), self.center_height-(cur_val-cen_val)*ratio, self.center_width-type*(self.size*22), self.center_height-(cur_val-cen_val)*ratio, fill=self.fg_color, tags=("spd_line" if type==1 else "alt_line"))
 
@@ -143,7 +144,7 @@ class gui_1(tk.Canvas):
         self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0)//60:02}:{max(self.ffl_secs, 0)%60:02}")
 
     def update_vals(self, speed, altitude, pitch, roll, g_force, ffl_secs):
-        self.alpha = 0.01 # filtering weight
+        self.alpha = 0.1 # filtering weight
 
         self.speed = self.speed*(1-self.alpha) + speed*self.alpha
         self.altitude = max(altitude, 0)
@@ -180,9 +181,9 @@ if __name__ == "__main__":
             heights.remove('\n')
         except:
             break
-
+    print(heights)
     # root.configure(height=1080, width=1920)
-    one = gui_1(master=root, size=SIZE, testing=True)
+    one = gui_1(master=root, size=SIZE, testing=False)
     one.configure(height=SCRN_HEIGHT, width=SCRN_WIDTH)
     one.grid_propagate(0)
 
