@@ -9,17 +9,19 @@ from threading import Thread, Event
 from sensors import Log, BH1750, BMX160, GPS, MS5611
 
 # 常量定义
-FONT = "Times New Roman"
+FONT = "Arial Black"
 SIZE = 25
 SCRN_HEIGHT = 900
 SCRN_WIDTH = 1920
+LINE_WIDTH = 5
+RATIO = 8.8
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH / 2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT / 2
 
 G_WARNING_THRESHOLD = 4.0
 
-SPEED_UNITS_TEXT = "m/s"
+SPEED_UNITS_TEXT = "km/h"
 HEIGHT_UNITS_TEXT = "m"
 G_WARNING_TEXT = "G-FORCE WARNING"
 FREEFALL_TIME_TEXT = "FREEFALL TIME "  # 必须有后续的空格
@@ -62,7 +64,8 @@ class FlightInstrumentCanvas(tk.Canvas):
             text=int(cur_val),
             anchor=(tk.E if type == 1 else tk.W),
             fill=self.fg_color,
-            tags=("spd_line" if type == 1 else "alt_line")
+            tags=("spd_line" if type == 1 else "alt_line"),
+            font=(FONT, int(self.size * 1.5)),
         )
         self.create_line(
             self.center_width - type * (self.size * 23),
@@ -70,7 +73,8 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_width - type * (self.size * 22),
             self.center_height - (cur_val - cen_val) * ratio,
             fill=self.fg_color,
-            tags=("spd_line" if type == 1 else "alt_line")
+            tags=("spd_line" if type == 1 else "alt_line"),
+            width = LINE_WIDTH
         )
 
     def draw_speedometer(self):
@@ -86,13 +90,15 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_height + self.size * 11.5,
             self.center_width - base_size,
             self.center_height + self.size * 11.5,
-            fill=self.fg_color
+            fill=self.fg_color,
+            width=LINE_WIDTH
         )
         self.create_text(
             self.center_width - self.size * 24,
             self.center_height - self.size * 13,
             text=SPEED_UNITS_TEXT,
-            fill=self.fg_color
+            fill=self.fg_color, 
+            font=(FONT, int(self.size * 1.5)),
         )
         self.create_polygon(
             self.center_width - self.size * 21,
@@ -104,32 +110,34 @@ class FlightInstrumentCanvas(tk.Canvas):
             fill=self.fg_color
         )
         self.create_text(
-            self.center_width - self.size * 16.5,
+            self.center_width - self.size * 12,
             self.center_height,
             text=self.speed,
-            font=(FONT, self.size * 2),
+            font=(FONT, int(self.size * 5)),
             fill=self.fg_color,
             tags="main_spd"
         )
 
     def update_speedometer(self):
         """更新速度表"""
-        ratio = 3.5
+        ratio = RATIO
         self.delete("spd_line")
 
-        cur_spd = self.speed // 10 * 10
-        self.draw_number_line(cur_spd, self.speed, ratio, 1)
-        while cur_spd - self.speed >= -20:
+        show_speed = (self.speed * 3.6) if SPEED_UNITS_TEXT == "km/h" else (self.speed)
+
+        cur_spd = show_speed // 10 * 10
+        self.draw_number_line(cur_spd, show_speed, ratio, 1)
+        while cur_spd - show_speed >= -20:
             cur_spd -= 10
-            self.draw_number_line(cur_spd, self.speed, ratio, 1)
+            self.draw_number_line(cur_spd, show_speed, ratio, 1)
         
-        cur_spd = self.speed // 10 * 10 + 10
-        self.draw_number_line(cur_spd, self.speed, ratio, 1)
-        while cur_spd - self.speed <= 20:
+        cur_spd = show_speed // 10 * 10 + 10
+        self.draw_number_line(cur_spd, show_speed, ratio, 1)
+        while cur_spd - show_speed <= 20:
             cur_spd += 10
-            self.draw_number_line(cur_spd, self.speed, ratio, 1)
+            self.draw_number_line(cur_spd, show_speed, ratio, 1)
         
-        self.itemconfigure("main_spd", text=int(self.speed))
+        self.itemconfigure("main_spd", text=int(show_speed))
 
     def draw_altimeter(self):
         """绘制高度表"""
@@ -144,13 +152,15 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_height + self.size * 11.5,
             self.center_width + base_size,
             self.center_height + self.size * 11.5,
-            fill=self.fg_color
+            fill=self.fg_color,
+            width=LINE_WIDTH
         )
         self.create_text(
             self.center_width + self.size * 24,
             self.center_height - self.size * 13,
             text=HEIGHT_UNITS_TEXT,
-            fill=self.fg_color
+            fill=self.fg_color,
+            font=(FONT, int(self.size * 1.5)),
         )
         self.create_polygon(
             self.center_width + self.size * 21,
@@ -162,17 +172,17 @@ class FlightInstrumentCanvas(tk.Canvas):
             fill=self.fg_color
         )
         self.create_text(
-            self.center_width + self.size * 16.5,
+            self.center_width + self.size * 12,
             self.center_height,
             text=self.altitude,
-            font=(FONT, self.size * 2),
+            font=(FONT, int(self.size * 5)),
             fill=self.fg_color,
             tags="main_alt"
         )
 
     def update_altimeter(self):
         """更新高度表"""
-        ratio = 3.5 / 50
+        ratio = RATIO / 50
         self.delete("alt_line")
 
         cur_alt = self.altitude // 500 * 500
@@ -191,20 +201,24 @@ class FlightInstrumentCanvas(tk.Canvas):
     
     def draw_horizon(self):
         """绘制地平线"""
+        ''' 暂时去掉线，给字体留位置
         self.create_line(
             self.center_width - self.size * 3,
             self.center_height,
             self.center_width - self.size * 13,
             self.center_height,
-            fill=self.fg_color
+            fill=self.fg_color,
+            width=LINE_WIDTH
         )
         self.create_line(
             self.center_width + self.size * 3,
             self.center_height,
             self.center_width + self.size * 13,
             self.center_height,
-            fill=self.fg_color
+            fill=self.fg_color,
+            width=LINE_WIDTH
         )
+        '''
         self.create_line(
             self.center_width - self.size * 2,
             self.center_height + self.size * 1.5,
@@ -220,7 +234,8 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_height + self.size * 1.5,
             self.center_width + self.size * 2,
             self.center_height + self.size * 1.5,
-            fill=self.fg_color
+            fill=self.fg_color,
+            width=LINE_WIDTH
         )
         for i in (5, -5):
             self.create_line(
@@ -229,7 +244,7 @@ class FlightInstrumentCanvas(tk.Canvas):
                 self.center_width - self.size * 8,
                 self.center_height - self.size * 2.3 * i,
                 dash=1,
-                fill=self.fg_color
+                fill=self.fg_color,
             )
             self.create_line(
                 self.center_width + self.size * 3,
@@ -312,7 +327,7 @@ class FlightInstrumentCanvas(tk.Canvas):
 
     def update_values(self, speed=None, altitude=None, pitch=None, roll=None, g_force=None, ffl_secs=None):
         """更新所有仪表值"""
-        self.alpha = 0.02  # 滤波权重
+        self.alpha = 0.04  # 滤波权重
         
         if speed is not None:
             self.speed = self.speed * (1 - self.alpha) + speed * self.alpha
@@ -358,6 +373,14 @@ if __name__ == "__main__":
     heights = [height for height in heights if height != '\n']
     # 将heights转为浮点数组，heights采样率为0.1s
     heights = [float(height.split()[2][:-1]) for height in heights]
+    alpha = 0.2
+    filtered_heights = [heights[0]]  # Initialize with the first height
+
+    for new_height in heights[1:]:
+        current_height = filtered_heights[-1]
+        filtered_height = (1 - alpha) * current_height + alpha * new_height
+        filtered_heights.append(filtered_height)
+    heights = filtered_heights
 
     # 创建仪表画布
     instrument = FlightInstrumentCanvas(master=root, size=SIZE, testing=False)

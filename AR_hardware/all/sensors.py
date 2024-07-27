@@ -107,20 +107,25 @@ class MS5611:
     
     def run(self, update_method):
         altitude_m = 0
+        prev_altitude_m = 0
+        alpha = 0.2
         stop_event = Event()
         reader = ms5611spi.MS5611SPI(stop_event)
         try:
             reader.start()
             while True:
                 timestamp, pressure = reader.readRaw()
-                altitude_m = self.pressure_to_altitude(pressure)
+                prev_altitude_m = altitude_m
+                new_altitude_m = self.pressure_to_altitude(pressure)
+                # 经过一个更新滤波器
+                altitude_m = altitude_m*(1-alpha) + new_altitude_m*alpha
                 s = str.format("{:.3f}, {:.2f}mbar, {:.2f}m\n", timestamp, pressure, altitude_m)
                 #print(s)
                 self.log.write(s)
                 #widget.insert(tk.END, s + '\n')
                 #widget.see(tk.END)
                 altitude_m = int(altitude_m)
-                update_method(altitude = altitude_m)
+                update_method(speed = prev_altitude_m - altitude_m, altitude = altitude_m)
                 time.sleep(1/10.0)
         except KeyboardInterrupt as e:
             stop_event.set()
