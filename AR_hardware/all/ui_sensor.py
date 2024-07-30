@@ -11,10 +11,12 @@ from sensors import Log, BH1750, BMX160, GPS, MS5611
 # 常量定义
 FONT = "Arial Black"
 SIZE = 25
-SCRN_HEIGHT = 900
+SCRN_HEIGHT = 1080
 SCRN_WIDTH = 1920
 LINE_WIDTH = 5
 RATIO = 8.8
+
+FULLSCREEN = True
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH / 2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT / 2
@@ -42,7 +44,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.size = size
         self.center_width = SCRN_WIDTH_CENTER
         self.center_height = SCRN_HEIGHT_CENTER
-        self.fg_color = "black" if testing else "green"
+        self.fg_color = "#000000" if testing else "#00FF00" # black and green
         
         self.grid()
 
@@ -300,10 +302,11 @@ class FlightInstrumentCanvas(tk.Canvas):
         )
         self.create_text(
             self.center_width,
-            self.center_height + self.size * 20,
+            self.center_height + self.size * 18,
             text=G_WARNING_TEXT,
             fill="red",
-            tags="g_warn"
+            tags="g_warn",
+            font = (FONT, int(self.size * 0.8))
         )
 
     def update_g_force_indicator(self):
@@ -364,7 +367,8 @@ if __name__ == "__main__":
     # 创建主窗口
     root = tk.Tk()
     # 设置全屏
-    # root.attributes("-fullscreen", True)
+    if FULLSCREEN == True:
+        root.attributes("-fullscreen", True)
 
     # 读取测试数据
     with open("test.txt", "r") as data:
