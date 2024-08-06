@@ -6,20 +6,25 @@ import tkinter.ttk as ttk
 
 from threading import Thread, Event
 
-from sensors import Log, BH1750, BMX160, GPS, MS5611
+# from sensors import Log, BH1750, BMX160, GPS, MS5611
 
 # 常量定义
-FONT = "Arial Black"
-SIZE = 25
+FONT = "Arial"
+SIZE = 12.5
 SCRN_HEIGHT = 1080
 SCRN_WIDTH = 1920
-LINE_WIDTH = 5
-RATIO = 8.8
 
-FULLSCREEN = True
+SCRN_HEIGHT = 540
+SCRN_WIDTH = 960
+
+LINE_WIDTH = SIZE * 0.2
+RATIO = SIZE * 0.352
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH / 2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT / 2
+
+BLACK_COLOR = "#000000"
+GREEN_COLOR = "#00FF00"
 
 G_WARNING_THRESHOLD = 4.0
 
@@ -31,7 +36,7 @@ FREEFALL_TIME_TEXT = "FREEFALL TIME "  # 必须有后续的空格
 
 class FlightInstrumentCanvas(tk.Canvas):
     def __init__(self, master, size=SIZE, testing=False):
-        super().__init__(master, bg="light gray" if testing else "black")
+        super().__init__(master, bg=BLACK_COLOR)
         
         # 初始化仪表参数
         self.speed = 0
@@ -44,7 +49,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.size = size
         self.center_width = SCRN_WIDTH_CENTER
         self.center_height = SCRN_HEIGHT_CENTER
-        self.fg_color = "#000000" if testing else "#00FF00" # black and green
+        self.fg_color = GREEN_COLOR
         
         self.grid()
 
@@ -53,16 +58,31 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.draw_altimeter()
         self.draw_horizon()
         self.draw_g_force_indicator()
-        self.draw_freefall_time_indicator()
+        # self.draw_freefall_time_indicator()
 
         # 更新仪表值
         self.update_values(self.speed, self.altitude, self.pitch, self.roll, self.g_force, self.ffl_secs)
 
+    def draw_minor_line(self, cur_val, cen_val, ratio, type=1):
+        y_pos = self.center_height - (cur_val - cen_val) * ratio
+        self.create_line(
+            self.center_width - type * (self.size * 25.5),
+            y_pos,
+            self.center_width - type * (self.size * 25),
+            y_pos,
+            fill=self.fg_color,
+            tags=("spd_line" if type == 1 else "alt_line"),
+            width=LINE_WIDTH
+        )
+        self.tag_lower("spd_line", "speedometer")
+        self.tag_lower("alt_line", "altimeter")
+
     def draw_number_line(self, cur_val, cen_val, ratio, type=1):
         """绘制数值线"""
+        y_pos = self.center_height - (cur_val - cen_val) * ratio
         self.create_text(
-            self.center_width - type * (self.size * 23.5),
-            self.center_height - (cur_val - cen_val) * ratio,
+            self.center_width - type * (self.size * 26.5),
+            y_pos,
             text=int(cur_val),
             anchor=(tk.E if type == 1 else tk.W),
             fill=self.fg_color,
@@ -70,54 +90,144 @@ class FlightInstrumentCanvas(tk.Canvas):
             font=(FONT, int(self.size * 1.5)),
         )
         self.create_line(
-            self.center_width - type * (self.size * 23),
-            self.center_height - (cur_val - cen_val) * ratio,
-            self.center_width - type * (self.size * 22),
-            self.center_height - (cur_val - cen_val) * ratio,
+            self.center_width - type * (self.size * 26),
+            y_pos,
+            self.center_width - type * (self.size * 25),
+            y_pos,
             fill=self.fg_color,
             tags=("spd_line" if type == 1 else "alt_line"),
-            width = LINE_WIDTH
+            width=LINE_WIDTH
         )
+        self.tag_lower("spd_line", "speedometer")
+        self.tag_lower("alt_line", "altimeter")
 
     def draw_speedometer(self):
         """绘制速度表"""
         base_size = self.size * 26
 
-        self.create_line(
-            self.center_width - base_size,
-            self.center_height - self.size * 11.5,
+        arrow_center_width = self.center_width - self.size * 24
+        arrow_center_height = self.center_height + self.size * 0
+
+        self.create_rectangle(
+            self.center_width - 30 * self.size,
+            self.center_height - self.size * 13,
             self.center_width - 22 * self.size,
-            self.center_height - self.size * 11.5,
-            self.center_width - 22 * self.size,
-            self.center_height + self.size * 11.5,
-            self.center_width - base_size,
-            self.center_height + self.size * 11.5,
-            fill=self.fg_color,
-            width=LINE_WIDTH
+            self.center_height - self.size * 15, 
+            fill=BLACK_COLOR,
+            tags="speedometer"
         )
+        self.create_rectangle(
+            self.center_width - 30 * self.size,
+            self.center_height + self.size * 19,
+            self.center_width - 22 * self.size,
+            self.center_height + self.size * 21, 
+            fill=BLACK_COLOR,
+            tags="speedometer"
+        )
+        # self.create_line(
+        #     self.center_width - base_size,
+        #     self.center_height - self.size * 11.5,
+        #     self.center_width - 22 * self.size,
+        #     self.center_height - self.size * 11.5,
+        #     self.center_width - 22 * self.size,
+        #     self.center_height + self.size * 11.5,
+        #     self.center_width - base_size,
+        #     self.center_height + self.size * 11.5,
+        #     fill=self.fg_color,
+        #     width=LINE_WIDTH, 
+        #     tags="speedometer"
+        # )
         self.create_text(
             self.center_width - self.size * 24,
             self.center_height - self.size * 13,
             text=SPEED_UNITS_TEXT,
             fill=self.fg_color, 
-            font=(FONT, int(self.size * 1.5)),
+            font=(FONT, int(self.size * 1.5)), 
+            tags="speedometer"
+        )
+        self.create_rectangle(
+            arrow_center_width - 3,
+            arrow_center_height + self.size * 1.5 + 3,
+            arrow_center_width + self.size * 9.5 + 3,
+            arrow_center_height - self.size * 1.5 - 3,
+            fill=BLACK_COLOR
         )
         self.create_polygon(
-            self.center_width - self.size * 21,
-            self.center_height,
-            self.center_width - self.size * 20,
-            self.center_height + self.size / 1.732,
-            self.center_width - self.size * 20,
-            self.center_height - self.size / 1.732,
-            fill=self.fg_color
+            arrow_center_width,
+            arrow_center_height,
+            arrow_center_width + self.size * 1.5,
+            arrow_center_height + self.size * 1.5,
+            arrow_center_width + self.size * 9.5,
+            arrow_center_height + self.size * 1.5,
+            arrow_center_width + self.size * 9.5,
+            arrow_center_height - self.size * 1.5,
+            arrow_center_width + self.size * 1.5,
+            arrow_center_height - self.size * 1.5,
+            outline=self.fg_color,
+            fill=''
         )
         self.create_text(
-            self.center_width - self.size * 12,
+            self.center_width - self.size * 16,
             self.center_height,
+            anchor=tk.E,
             text=self.speed,
-            font=(FONT, int(self.size * 5)),
-            fill=self.fg_color,
+            font=(FONT, int(-self.size * 3)),
+            fill=BLACK_COLOR,
             tags="main_spd"
+        )
+        self.create_text(
+            self.center_width - self.size * 16,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_spd_0_t"
+        )
+        self.create_text(
+            self.center_width - self.size * 16,
+            self.center_height - self.size * 2.6,
+            text="1",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_spd_0_b"
+        )
+        self.create_text(
+            self.center_width - self.size * 17.7,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_spd_1_t"
+        )
+        self.create_text(
+            self.center_width - self.size * 17.7,
+            self.center_height - self.size * 2.6,
+            text="1",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_spd_1_b"
+        )
+        self.create_text(
+            self.center_width - self.size * 19.4,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_spd_2"
+        )
+        self.create_rectangle(
+            arrow_center_width,
+            arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
+            arrow_center_width + self.size * 9.5,
+            arrow_center_height + self.size * 4,
+            fill=BLACK_COLOR,
+        )
+        self.create_rectangle(
+            arrow_center_width,
+            arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
+            arrow_center_width + self.size * 9.5,
+            arrow_center_height - self.size * 4,
+            fill=BLACK_COLOR,
         )
 
     def update_speedometer(self):
@@ -129,55 +239,100 @@ class FlightInstrumentCanvas(tk.Canvas):
 
         cur_spd = show_speed // 10 * 10
         self.draw_number_line(cur_spd, show_speed, ratio, 1)
-        while cur_spd - show_speed >= -20:
-            cur_spd -= 10
-            self.draw_number_line(cur_spd, show_speed, ratio, 1)
-        
-        cur_spd = show_speed // 10 * 10 + 10
+        while cur_spd - show_speed >= -55:
+            cur_spd -= 2
+            if not (cur_spd % 10):
+                self.draw_number_line(cur_spd, show_speed, ratio, 1)
+            else:
+                self.draw_minor_line(cur_spd, show_speed, ratio, 1)
+                
+        cur_spd = show_speed // 10 * 10
         self.draw_number_line(cur_spd, show_speed, ratio, 1)
-        while cur_spd - show_speed <= 20:
-            cur_spd += 10
-            self.draw_number_line(cur_spd, show_speed, ratio, 1)
+        while cur_spd - show_speed <= 35:
+            cur_spd += 2
+            if not (cur_spd % 10):
+                self.draw_number_line(cur_spd, show_speed, ratio, 1)
+            else:
+                self.draw_minor_line(cur_spd, show_speed, ratio, 1)
         
         self.itemconfigure("main_spd", text=int(show_speed))
+
+        # print(show_speed)
+        offset = show_speed - show_speed // 1
+        self.coords("main_spd_0_t", self.center_width - self.size * 16, self.center_height - offset * 30)
+        self.itemconfigure("main_spd_0_t", text=int(show_speed % 10 // 1))
+        self.coords("main_spd_0_b", self.center_width - self.size * 16, self.center_height + self.size * 2.6 - offset * 30)
+        self.itemconfigure("main_spd_0_b", text=int((show_speed+1) % 10 // 1))
+        offset = show_speed - show_speed // 10 * 10
+        self.coords("main_spd_1_t", self.center_width - self.size * 17.7, self.center_height - offset * 3)
+        self.itemconfigure("main_spd_1_t", text=int(show_speed % 100 // 10))
+        self.coords("main_spd_1_b", self.center_width - self.size * 17.7, self.center_height + self.size * 2.6 - offset * 3)
+        self.itemconfigure("main_spd_1_b", text=int((show_speed+10) % 100 // 10))
+        self.itemconfigure("main_spd_2", text=int(max(show_speed // 100, 0)))
 
     def draw_altimeter(self):
         """绘制高度表"""
         base_size = self.size * 26
 
-        self.create_line(
-            self.center_width + base_size,
-            self.center_height - self.size * 11.5,
+        arrow_center_width = self.center_width + self.size * 24
+        arrow_center_height = self.center_height + self.size * 0
+
+        self.create_rectangle(
+            self.center_width + 34 * self.size,
+            self.center_height - self.size * 13,
             self.center_width + 22 * self.size,
-            self.center_height - self.size * 11.5,
-            self.center_width + 22 * self.size,
-            self.center_height + self.size * 11.5,
-            self.center_width + base_size,
-            self.center_height + self.size * 11.5,
-            fill=self.fg_color,
-            width=LINE_WIDTH
+            self.center_height - self.size * 15, 
+            fill=BLACK_COLOR,
+            tags="altimeter"
         )
+        self.create_rectangle(
+            self.center_width + 34 * self.size,
+            self.center_height + self.size * 19,
+            self.center_width + 22 * self.size,
+            self.center_height + self.size * 21, 
+            fill=BLACK_COLOR,
+            tags="altimeter"
+        )
+        # self.create_line(
+        #     self.center_width + base_size,
+        #     self.center_height - self.size * 11.5,
+        #     self.center_width + 22 * self.size,
+        #     self.center_height - self.size * 11.5,
+        #     self.center_width + 22 * self.size,
+        #     self.center_height + self.size * 11.5,
+        #     self.center_width + base_size,
+        #     self.center_height + self.size * 11.5,
+        #     fill=self.fg_color,
+        #     width=LINE_WIDTH, 
+        #     tags="altimeter"
+        # )
         self.create_text(
             self.center_width + self.size * 24,
             self.center_height - self.size * 13,
             text=HEIGHT_UNITS_TEXT,
             fill=self.fg_color,
-            font=(FONT, int(self.size * 1.5)),
+            font=(FONT, int(self.size * 1.5)), 
+            tags="altimeter"
         )
         self.create_polygon(
-            self.center_width + self.size * 21,
-            self.center_height,
-            self.center_width + self.size * 20,
-            self.center_height + self.size / 1.732,
-            self.center_width + self.size * 20,
-            self.center_height - self.size / 1.732,
-            fill=self.fg_color
+            arrow_center_width,
+            arrow_center_height,
+            arrow_center_width - self.size * 1.5,
+            arrow_center_height + self.size * 1.5,
+            arrow_center_width - self.size * 9.5,
+            arrow_center_height + self.size * 1.5,
+            arrow_center_width - self.size * 9.5,
+            arrow_center_height - self.size * 1.5,
+            arrow_center_width - self.size * 1.5,
+            arrow_center_height - self.size * 1.5,
+            outline=self.fg_color
         )
         self.create_text(
-            self.center_width + self.size * 12,
+            self.center_width + self.size * 22,
             self.center_height,
             text=self.altitude,
-            font=(FONT, int(self.size * 5)),
+            anchor=tk.E,
+            font=(FONT, int(-self.size * 3)),
             fill=self.fg_color,
             tags="main_alt"
         )
@@ -189,15 +344,21 @@ class FlightInstrumentCanvas(tk.Canvas):
 
         cur_alt = self.altitude // 500 * 500
         self.draw_number_line(cur_alt, self.altitude, ratio, -1)
-        while cur_alt - self.altitude >= -1000:
-            cur_alt -= 500
-            self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+        while cur_alt - self.altitude >= -2750:
+            cur_alt -= 100
+            if not (cur_alt % 500):
+                self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+            else:
+                self.draw_minor_line(cur_alt, self.altitude, ratio, -1)
         
-        cur_alt = self.altitude // 500 * 500 + 500
+        cur_alt = self.altitude // 500 * 500
         self.draw_number_line(cur_alt, self.altitude, ratio, -1)
-        while cur_alt - self.altitude <= 1000:
-            cur_alt += 500
-            self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+        while cur_alt - self.altitude <= 1750:
+            cur_alt += 100
+            if not (cur_alt % 500):
+                self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+            else:
+                self.draw_minor_line(cur_alt, self.altitude, ratio, -1)
         
         self.itemconfigure("main_alt", text=int(self.altitude))
     
@@ -302,11 +463,10 @@ class FlightInstrumentCanvas(tk.Canvas):
         )
         self.create_text(
             self.center_width,
-            self.center_height + self.size * 18,
+            self.center_height + self.size * 20,
             text=G_WARNING_TEXT,
             fill="red",
-            tags="g_warn",
-            font = (FONT, int(self.size * 0.8))
+            tags="g_warn"
         )
 
     def update_g_force_indicator(self):
@@ -367,8 +527,7 @@ if __name__ == "__main__":
     # 创建主窗口
     root = tk.Tk()
     # 设置全屏
-    if FULLSCREEN == True:
-        root.attributes("-fullscreen", True)
+    # root.attributes("-fullscreen", True)
 
     # 读取测试数据
     with open("test.txt", "r") as data:
@@ -408,6 +567,8 @@ if __name__ == "__main__":
     log_button = UpdateButton(text="记录更新", command=lambda: log_button.update(heights[time]))
     test_button.grid(row=10)
     log_button.grid(row=11)
+    instrument.create_window(30, 20, window=test_button)
+    instrument.create_window(30, 50, window=log_button)
 
     bmx160 = BMX160()
     gps = GPS()
