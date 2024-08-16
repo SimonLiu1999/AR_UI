@@ -293,19 +293,6 @@ class FlightInstrumentCanvas(tk.Canvas):
             fill=BLACK_COLOR,
             tags="altimeter"
         )
-        # self.create_line(
-        #     self.center_width + base_size,
-        #     self.center_height - self.size * 11.5,
-        #     self.center_width + 22 * self.size,
-        #     self.center_height - self.size * 11.5,
-        #     self.center_width + 22 * self.size,
-        #     self.center_height + self.size * 11.5,
-        #     self.center_width + base_size,
-        #     self.center_height + self.size * 11.5,
-        #     fill=self.fg_color,
-        #     width=LINE_WIDTH, 
-        #     tags="altimeter"
-        # )
         self.create_text(
             self.center_width + self.size * 24,
             self.center_height - self.size * 13,
@@ -333,8 +320,70 @@ class FlightInstrumentCanvas(tk.Canvas):
             text=self.altitude,
             anchor=tk.E,
             font=(FONT, int(-self.size * 3)),
-            fill=self.fg_color,
+            fill=BLACK_COLOR,
             tags="main_alt"
+        )
+        self.create_text(
+            self.center_width + self.size * 21.5,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_0_t"
+        )
+        self.create_text(
+            self.center_width + self.size * 21.5,
+            self.center_height - self.size * 2.6,
+            text="1",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_0_b"
+        )
+        self.create_text(
+            self.center_width + self.size * 19.8,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_1_t"
+        )
+        self.create_text(
+            self.center_width + self.size * 19.8,
+            self.center_height - self.size * 2.6,
+            text="1",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_1_b"
+        )
+        self.create_text(
+            self.center_width + self.size * 18.1,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_2"
+        )
+        self.create_text(
+            self.center_width + self.size * 16.4,
+            self.center_height,
+            text="0",
+            font=(FONT, int(-self.size * 3)),
+            fill=self.fg_color,
+            tags="main_alt_3"
+        )
+        self.create_rectangle(
+            arrow_center_width,
+            arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
+            arrow_center_width - self.size * 9.5,
+            arrow_center_height + self.size * 4,
+            fill=BLACK_COLOR,
+        )
+        self.create_rectangle(
+            arrow_center_width,
+            arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
+            arrow_center_width - self.size * 9.5,
+            arrow_center_height - self.size * 4,
+            fill=BLACK_COLOR,
         )
 
     def update_altimeter(self):
@@ -342,25 +391,42 @@ class FlightInstrumentCanvas(tk.Canvas):
         ratio = RATIO / 50
         self.delete("alt_line")
 
-        cur_alt = self.altitude // 500 * 500
-        self.draw_number_line(cur_alt, self.altitude, ratio, -1)
-        while cur_alt - self.altitude >= -2750:
+        show_altitude = self.altitude
+
+        cur_alt = show_altitude // 500 * 500
+        self.draw_number_line(cur_alt, show_altitude, ratio, -1)
+        while cur_alt - show_altitude >= -2750:
             cur_alt -= 100
             if not (cur_alt % 500):
-                self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+                self.draw_number_line(cur_alt, show_altitude, ratio, -1)
             else:
-                self.draw_minor_line(cur_alt, self.altitude, ratio, -1)
-        
-        cur_alt = self.altitude // 500 * 500
-        self.draw_number_line(cur_alt, self.altitude, ratio, -1)
-        while cur_alt - self.altitude <= 1750:
+                self.draw_minor_line(cur_alt, show_altitude, ratio, -1)
+
+        cur_alt = show_altitude // 500 * 500
+        self.draw_number_line(cur_alt, show_altitude, ratio, -1)
+        while cur_alt - show_altitude <= 1750:
             cur_alt += 100
             if not (cur_alt % 500):
-                self.draw_number_line(cur_alt, self.altitude, ratio, -1)
+                self.draw_number_line(cur_alt, show_altitude, ratio, -1)
             else:
-                self.draw_minor_line(cur_alt, self.altitude, ratio, -1)
-        
-        self.itemconfigure("main_alt", text=int(self.altitude))
+                self.draw_minor_line(cur_alt, show_altitude, ratio, -1)
+
+        self.itemconfigure("main_alt", text=int(show_altitude))
+
+        # Calculate the rolling effect for the last two digits
+        offset = show_altitude % 1
+        self.coords("main_alt_0_t", self.center_width + self.size * 21.5, self.center_height + offset * 30)
+        self.itemconfigure("main_alt_0_t", text=int(show_altitude % 10))
+        self.coords("main_alt_0_b", self.center_width + self.size * 21.5, self.center_height - self.size * 2.6 + offset * 30)
+        self.itemconfigure("main_alt_0_b", text=int((show_altitude + 1) % 10))
+
+        offset = show_altitude - show_altitude // 10 * 10
+        self.coords("main_alt_1_t", self.center_width + self.size * 19.8, self.center_height + offset * 3)
+        self.itemconfigure("main_alt_1_t", text=int((show_altitude // 10) % 10))
+        self.coords("main_alt_1_b", self.center_width + self.size * 19.8, self.center_height - self.size * 2.6 + offset * 3)
+        self.itemconfigure("main_alt_1_b", text=int((show_altitude // 10 + 1) % 10))
+        self.itemconfigure("main_alt_2", text=int((show_altitude // 100) % 10))
+        self.itemconfigure("main_alt_3", text=int((show_altitude // 1000) % 10))
     
     def draw_horizon(self):
         """绘制地平线"""
@@ -557,7 +623,7 @@ if __name__ == "__main__":
         text="随机更新",
         command=lambda: instrument.update_values(
             speed=random.randint(0, 1000),
-            altitude=random.randint(0, 10000),
+            altitude=random.randint(0, 1000000)/100,
             pitch=random.randint(-90, 90),
             roll=random.randint(0, 0),
             g_force=random.randint(0, 100) / 10,
@@ -570,17 +636,17 @@ if __name__ == "__main__":
     instrument.create_window(30, 20, window=test_button)
     instrument.create_window(30, 50, window=log_button)
 
-    bmx160 = BMX160()
-    gps = GPS()
-    ms5611 = MS5611()
-    bh1750 = BH1750()
-    # 启动4个线程，每个线程更新一个text widget
-    threads = []
-    entry_func_list = [bmx160.run, gps.run, ms5611.run, bh1750.run,]
-    for i in range(4):
-        thread = Thread(target=entry_func_list[i], args=(instrument.update_values,))
-        thread.daemon = True
-        thread.start()
-        threads.append(thread)
+    # bmx160 = BMX160()
+    # gps = GPS()
+    # ms5611 = MS5611()
+    # bh1750 = BH1750()
+    # # 启动4个线程，每个线程更新一个text widget
+    # threads = []
+    # entry_func_list = [bmx160.run, gps.run, ms5611.run, bh1750.run,]
+    # for i in range(4):
+    #     thread = Thread(target=entry_func_list[i], args=(instrument.update_values,))
+    #     thread.daemon = True
+    #     thread.start()
+    #     threads.append(thread)
 
     root.mainloop()
