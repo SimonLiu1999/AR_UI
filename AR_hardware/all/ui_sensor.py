@@ -1,8 +1,7 @@
-import sys
 import random
 import tkinter as tk
-import tkinter.filedialog as tkfd
 import tkinter.ttk as ttk
+import math
 
 from threading import Thread, Event
 
@@ -43,6 +42,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.altitude = 0
         self.pitch = 0  # 范围 +90 ~ -90
         self.roll = 0  # 范围 +180 ~ -180, 向右倾斜为正
+        self.heading = 0 # 范围 [0, 360)
         self.g_force = 4.2
         self.ffl_secs = 100  # 必须大于0，小于0时显示0
 
@@ -428,7 +428,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.itemconfigure("main_alt_2", text=int((show_altitude // 100) % 10))
         self.itemconfigure("main_alt_3", text=int((show_altitude // 1000) % 10))
     
-    def draw_horizon(self):
+    def draw_horizon(self): #先留一会
         """绘制地平线"""
         ''' 暂时去掉线，给字体留位置
         self.create_line(
@@ -514,9 +514,47 @@ class FlightInstrumentCanvas(tk.Canvas):
                 fill=self.fg_color
             )
 
+    def draw_horizon(self):
+        """绘制地平线"""
+        # Draw the initial horizon line extended beyond the screen width
+        self.horizon_line = self.create_line(
+            -SCRN_WIDTH,
+            self.center_height,
+            2 * SCRN_WIDTH,
+            self.center_height,
+            fill=self.fg_color,
+            width=LINE_WIDTH,
+            tags="horizon"
+        )
+
     def update_horizon(self):
-        """更新地平线（暂未实现）"""
-        pass
+        """更新地平线"""
+        # Calculate the new position and rotation based on pitch and roll
+        pitch_offset = self.pitch * SCRN_HEIGHT / 60
+        roll_angle = math.radians(self.roll)
+
+        # Calculate the new coordinates for the horizon line
+        x1 = self.center_width - 2 * SCRN_WIDTH * math.cos(roll_angle)
+        y1 = self.center_height - 2 * SCRN_WIDTH * math.sin(roll_angle) - pitch_offset
+        x2 = self.center_width + 2 * SCRN_WIDTH * math.cos(roll_angle)
+        y2 = self.center_height + 2 * SCRN_WIDTH * math.sin(roll_angle) - pitch_offset
+
+        # Move and rotate the horizon line based on pitch and roll
+        self.coords(self.horizon_line, x1, y1, x2, y2)
+
+        self.delete("hdg_line")
+        show_hdg = self.heading
+        cur_hdg = (show_hdg // 10 * 10 - 50)
+        for i in range(11):
+            x = (x1 + x2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.cos(roll_angle)
+            y = (y1 + y2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.sin(roll_angle)
+
+            self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), width=LINE_WIDTH, fill=GREEN_COLOR, tags="hdg_line")
+            
+            self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360, font=(FONT, 18), fill=GREEN_COLOR, tags="hdg_line")
+
+            cur_hdg += 10
+            # cur_hdg %= 360
 
     def draw_g_force_indicator(self):
         """绘制G力指示器"""
@@ -554,7 +592,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         """更新自由落体时间指示器"""
         self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0) // 60:02}:{max(self.ffl_secs, 0) % 60:02}")
 
-    def update_values(self, speed=None, altitude=None, pitch=None, roll=None, g_force=None, ffl_secs=None):
+    def update_values(self, speed=None, altitude=None, pitch=None, roll=None, g_force=None, ffl_secs=None, heading=None):
         """更新所有仪表值"""
         self.alpha = 0.04  # 滤波权重
         
@@ -570,6 +608,8 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.g_force = g_force
         if ffl_secs is not None:
             self.ffl_secs = ffl_secs
+        if heading is not None:
+            self.heading = heading
 
         self.update_speedometer()
         self.update_altimeter()
@@ -624,10 +664,11 @@ if __name__ == "__main__":
         command=lambda: instrument.update_values(
             speed=random.randint(0, 1000),
             altitude=random.randint(0, 1000000)/100,
-            pitch=random.randint(-90, 90),
-            roll=random.randint(0, 0),
+            pitch=random.randint(-30, 30),
+            roll=random.randint(-90, 90),
             g_force=random.randint(0, 100) / 10,
-            ffl_secs=random.randint(0, 1200)
+            ffl_secs=random.randint(0, 1200),
+            heading=random.randint(0,359)
         )
     )
     log_button = UpdateButton(text="记录更新", command=lambda: log_button.update(heights[time]))
