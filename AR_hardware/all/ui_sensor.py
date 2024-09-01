@@ -38,11 +38,12 @@ class FlightInstrumentCanvas(tk.Canvas):
         super().__init__(master, bg=BLACK_COLOR)
         
         # 初始化仪表参数
-        self.speed = 0
+        self.vspeed = 0
         self.altitude = 0
         self.pitch = 0  # 范围 +90 ~ -90
         self.roll = 0  # 范围 +180 ~ -180, 向右倾斜为正
         self.heading = 0 # 范围 [0, 360)
+        self.gspeed = 0
         self.g_force = 4.2
         self.ffl_secs = 100  # 必须大于0，小于0时显示0
 
@@ -57,11 +58,13 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.draw_speedometer()
         self.draw_altimeter()
         self.draw_horizon()
+        self.draw_heading_wheel()
+        self.draw_gspeed_display()
         self.draw_g_force_indicator()
         # self.draw_freefall_time_indicator()
 
         # 更新仪表值
-        self.update_values(self.speed, self.altitude, self.pitch, self.roll, self.g_force, self.ffl_secs)
+        self.update_values(self.vspeed, self.altitude, self.pitch, self.roll, self.gspeed, self.g_force, self.ffl_secs)
 
     def draw_minor_line(self, cur_val, cen_val, ratio, type=1):
         y_pos = self.center_height - (cur_val - cen_val) * ratio
@@ -124,22 +127,9 @@ class FlightInstrumentCanvas(tk.Canvas):
             fill=BLACK_COLOR,
             tags="speedometer"
         )
-        # self.create_line(
-        #     self.center_width - base_size,
-        #     self.center_height - self.size * 11.5,
-        #     self.center_width - 22 * self.size,
-        #     self.center_height - self.size * 11.5,
-        #     self.center_width - 22 * self.size,
-        #     self.center_height + self.size * 11.5,
-        #     self.center_width - base_size,
-        #     self.center_height + self.size * 11.5,
-        #     fill=self.fg_color,
-        #     width=LINE_WIDTH, 
-        #     tags="speedometer"
-        # )
         self.create_text(
-            self.center_width - self.size * 24,
-            self.center_height - self.size * 13,
+            self.center_width - self.size * 26.5,
+            self.center_height - self.size * 14,
             text=SPEED_UNITS_TEXT,
             fill=self.fg_color, 
             font=(FONT, int(self.size * 1.5)), 
@@ -170,7 +160,7 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_width - self.size * 16,
             self.center_height,
             anchor=tk.E,
-            text=self.speed,
+            text=self.vspeed,
             font=(FONT, int(-self.size * 3)),
             fill=BLACK_COLOR,
             tags="main_spd"
@@ -235,7 +225,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         ratio = RATIO
         self.delete("spd_line")
 
-        show_speed = (self.speed * 3.6) if SPEED_UNITS_TEXT == "km/h" else (self.speed)
+        show_speed = (self.vspeed * 3.6) if SPEED_UNITS_TEXT == "km/h" else (self.speed)
 
         cur_spd = show_speed // 10 * 10
         self.draw_number_line(cur_spd, show_speed, ratio, 1)
@@ -277,6 +267,26 @@ class FlightInstrumentCanvas(tk.Canvas):
         arrow_center_width = self.center_width + self.size * 24
         arrow_center_height = self.center_height + self.size * 0
 
+        self.create_polygon(
+            self.center_width + self.size * 14.5 - 3, 
+            self.center_height - self.size * 1.5 - 3,
+            self.center_width + self.size * 14.5 - 3, 
+            self.center_height + self.size * 1.5 + 3,
+            self.center_width + self.size * 24,
+            self.center_height + self.size * 1.5 + 3,
+            self.center_width + self.size * 24,
+            self.center_height + self.size * 19,
+            self.center_width + self.size * 32,
+            self.center_height + self.size * 19,
+            self.center_width + self.size * 32,
+            self.center_height - self.size * 15,
+            self.center_width + self.size * 24,
+            self.center_height - self.size * 15,
+            self.center_width + self.size * 24,
+            self.center_height - self.size * 1.5 - 3,
+            fill="black",
+            tags="alt_base"
+        )
         self.create_rectangle(
             self.center_width + 34 * self.size,
             self.center_height - self.size * 13,
@@ -294,8 +304,8 @@ class FlightInstrumentCanvas(tk.Canvas):
             tags="altimeter"
         )
         self.create_text(
-            self.center_width + self.size * 24,
-            self.center_height - self.size * 13,
+            self.center_width + self.size * 26.55,
+            self.center_height - self.size * 14,
             text=HEIGHT_UNITS_TEXT,
             fill=self.fg_color,
             font=(FONT, int(self.size * 1.5)), 
@@ -549,12 +559,80 @@ class FlightInstrumentCanvas(tk.Canvas):
             x = (x1 + x2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.cos(roll_angle)
             y = (y1 + y2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.sin(roll_angle)
 
-            self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), width=LINE_WIDTH, fill=GREEN_COLOR, tags="hdg_line")
+            self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), width=LINE_WIDTH, fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
             
-            self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360, font=(FONT, 18), fill=GREEN_COLOR, tags="hdg_line")
+            self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360//10, font=(FONT, 18), fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
 
             cur_hdg += 10
             # cur_hdg %= 360
+        
+        self.tag_lower("horizon", "alt_base")
+
+    def draw_heading_wheel(self):
+        pass
+
+    def update_heading_wheel(self):
+        self.delete("hdg_whl")
+
+        wheel_center = self.center_height + self.size * 25
+
+        show_hdg = self.heading
+        cur_hdg = (show_hdg // 10 * 10 - 90)
+
+        for i in range(19):
+            if cur_hdg % 30:
+                self.create_line(
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 11 * self.size,
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 11 * self.size,
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 12 * self.size,
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 12 * self.size,
+                    width=LINE_WIDTH,
+                    fill=self.fg_color,
+                    tags="hdg_whl"
+                )
+            else:
+                self.create_line(
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 10 * self.size,
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 10 * self.size,
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 12 * self.size,
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 12 * self.size,
+                    width=LINE_WIDTH,
+                    fill=self.fg_color,
+                    tags="hdg_whl"
+                )
+                self.create_text(
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size,
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size,
+                    text=cur_hdg % 360 // 10,
+                    font=(FONT, int(-self.size * 2)),
+                    angle=show_hdg - cur_hdg,
+                    fill=self.fg_color,
+                    tags="hdg_whl"
+                )
+                if not(cur_hdg % 90):
+                    self.create_text(
+                        self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 9 * self.size,
+                        wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 9 * self.size,
+                        text=('N','E','S','W')[cur_hdg%360//90],
+                        font=(FONT, int(-self.size * 2)),
+                        angle=show_hdg - cur_hdg,
+                        fill=self.fg_color,
+                        tags="hdg_whl"
+                    )
+            cur_hdg += 10
+
+    def draw_gspeed_display(self):
+        self.create_text(
+            self.center_width,
+            self.center_height + self.size * 20,
+            text=000,
+            fill=self.fg_color,
+            font=(FONT, int(-SIZE * 2)),
+            tags="gspeed"
+        )
+    
+    def update_gspeed_display(self):
+        self.itemconfigure("gspeed", text=f"{self.gspeed:03}")
 
     def draw_g_force_indicator(self):
         """绘制G力指示器"""
@@ -577,6 +655,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         """更新G力指示器"""
         self.itemconfigure("g_num", text="%2.1f G" % (self.g_force))
         self.itemconfigure("g_warn", text=(G_WARNING_TEXT if self.g_force > G_WARNING_THRESHOLD else ""))
+        self.itemconfigure("g_warn", text="") #临时
     
     def draw_freefall_time_indicator(self):
         """绘制自由落体时间指示器"""
@@ -592,18 +671,20 @@ class FlightInstrumentCanvas(tk.Canvas):
         """更新自由落体时间指示器"""
         self.itemconfigure("ffl_time", text=FREEFALL_TIME_TEXT + f"{max(self.ffl_secs, 0) // 60:02}:{max(self.ffl_secs, 0) % 60:02}")
 
-    def update_values(self, speed=None, altitude=None, pitch=None, roll=None, g_force=None, ffl_secs=None, heading=None):
+    def update_values(self, vspeed=None, altitude=None, pitch=None, roll=None, gspeed=None, g_force=None, ffl_secs=None, heading=None):
         """更新所有仪表值"""
         self.alpha = 0.04  # 滤波权重
         
-        if speed is not None:
-            self.speed = self.speed * (1 - self.alpha) + speed * self.alpha
+        if vspeed is not None:
+            self.vspeed = self.vspeed * (1 - self.alpha) + vspeed * self.alpha
         if altitude is not None:
             self.altitude = max(altitude, 0)
         if pitch is not None:
             self.pitch = pitch
         if roll is not None:
             self.roll = roll
+        if gspeed is not None:
+            self.gspeed = gspeed
         if g_force is not None:
             self.g_force = g_force
         if ffl_secs is not None:
@@ -614,6 +695,8 @@ class FlightInstrumentCanvas(tk.Canvas):
         self.update_speedometer()
         self.update_altimeter()
         self.update_horizon()
+        self.update_heading_wheel()
+        self.update_gspeed_display()
         self.update_g_force_indicator()
         self.update_freefall_time_indicator()
 
@@ -662,10 +745,11 @@ if __name__ == "__main__":
     test_button = tk.Button(
         text="随机更新",
         command=lambda: instrument.update_values(
-            speed=random.randint(0, 1000),
+            vspeed=random.randint(0, 1000),
             altitude=random.randint(0, 1000000)/100,
             pitch=random.randint(-30, 30),
             roll=random.randint(-90, 90),
+            gspeed=random.randint(0,999),
             g_force=random.randint(0, 100) / 10,
             ffl_secs=random.randint(0, 1200),
             heading=random.randint(0,359)
