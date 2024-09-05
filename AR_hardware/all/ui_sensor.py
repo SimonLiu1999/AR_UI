@@ -9,10 +9,11 @@ from threading import Thread, Event
 
 # 常量定义
 FONT = "Arial"
-SIZE = 12.5
+SIZE = 25
 SCRN_HEIGHT = 1080
 SCRN_WIDTH = 1920
 
+SIZE = 12.5
 SCRN_HEIGHT = 540
 SCRN_WIDTH = 960
 
@@ -21,6 +22,8 @@ RATIO = SIZE * 0.352
 
 SCRN_WIDTH_CENTER = SCRN_WIDTH / 2
 SCRN_HEIGHT_CENTER = SCRN_HEIGHT / 2
+
+ROLLING = False
 
 BLACK_COLOR = "#000000"
 GREEN_COLOR = "#00FF00"
@@ -111,6 +114,26 @@ class FlightInstrumentCanvas(tk.Canvas):
         arrow_center_width = self.center_width - self.size * 24
         arrow_center_height = self.center_height + self.size * 0
 
+        self.create_polygon(
+            self.center_width - self.size * 14.5 - 3, 
+            self.center_height - self.size * 1.5 - 3,
+            self.center_width - self.size * 14.5 - 3, 
+            self.center_height + self.size * 1.5 + 3,
+            self.center_width - self.size * 24,
+            self.center_height + self.size * 1.5 + 3,
+            self.center_width - self.size * 24,
+            self.center_height + self.size * 19,
+            self.center_width - self.size * 30,
+            self.center_height + self.size * 19,
+            self.center_width - self.size * 30,
+            self.center_height - self.size * 15,
+            self.center_width - self.size * 24,
+            self.center_height - self.size * 15,
+            self.center_width - self.size * 24,
+            self.center_height - self.size * 1.5 - 3,
+            fill=BLACK_COLOR,
+            tags="alt_base"
+        )
         self.create_rectangle(
             self.center_width - 30 * self.size,
             self.center_height - self.size * 13,
@@ -198,27 +221,29 @@ class FlightInstrumentCanvas(tk.Canvas):
             tags="main_spd_1_b"
         )
         self.create_text(
-            self.center_width - self.size * 19.4,
+            self.center_width - self.size * 18.5,
             self.center_height,
+            anchor=tk.E,
             text="0",
             font=(FONT, int(-self.size * 3)),
             fill=self.fg_color,
             tags="main_spd_2"
         )
-        self.create_rectangle(
-            arrow_center_width,
-            arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
-            arrow_center_width + self.size * 9.5,
-            arrow_center_height + self.size * 4,
-            fill=BLACK_COLOR,
-        )
-        self.create_rectangle(
-            arrow_center_width,
-            arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
-            arrow_center_width + self.size * 9.5,
-            arrow_center_height - self.size * 4,
-            fill=BLACK_COLOR,
-        )
+        if ROLLING:
+            self.create_rectangle(
+                arrow_center_width,
+                arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
+                arrow_center_width + self.size * 9.5,
+                arrow_center_height + self.size * 4,
+                fill=BLACK_COLOR,
+            )
+            self.create_rectangle(
+                arrow_center_width,
+                arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
+                arrow_center_width + self.size * 9.5,
+                arrow_center_height - self.size * 4,
+                fill=BLACK_COLOR,
+            )
 
     def update_speedometer(self):
         """更新速度表"""
@@ -247,18 +272,25 @@ class FlightInstrumentCanvas(tk.Canvas):
         
         self.itemconfigure("main_spd", text=int(show_speed))
 
-        # print(show_speed)
-        offset = show_speed - show_speed // 1
-        self.coords("main_spd_0_t", self.center_width - self.size * 16, self.center_height - offset * 30)
         self.itemconfigure("main_spd_0_t", text=int(show_speed % 10 // 1))
-        self.coords("main_spd_0_b", self.center_width - self.size * 16, self.center_height + self.size * 2.6 - offset * 30)
-        self.itemconfigure("main_spd_0_b", text=int((show_speed+1) % 10 // 1))
-        offset = show_speed - show_speed // 10 * 10
-        self.coords("main_spd_1_t", self.center_width - self.size * 17.7, self.center_height - offset * 3)
         self.itemconfigure("main_spd_1_t", text=int(show_speed % 100 // 10))
-        self.coords("main_spd_1_b", self.center_width - self.size * 17.7, self.center_height + self.size * 2.6 - offset * 3)
-        self.itemconfigure("main_spd_1_b", text=int((show_speed+10) % 100 // 10))
         self.itemconfigure("main_spd_2", text=int(max(show_speed // 100, 0)))
+        
+        if ROLLING:
+            offset = show_speed - show_speed // 1
+            self.coords("main_spd_0_t", self.center_width - self.size * 16, self.center_height - offset * 30)
+            self.coords("main_spd_0_b", self.center_width - self.size * 16, self.center_height + self.size * 2.6 - offset * 30)
+            self.itemconfigure("main_spd_0_b", text=int((show_speed+1) % 10 // 1))
+            offset = show_speed - show_speed // 10 * 10
+            self.coords("main_spd_1_t", self.center_width - self.size * 17.7, self.center_height - offset * 3)
+            self.coords("main_spd_1_b", self.center_width - self.size * 17.7, self.center_height + self.size * 2.6 - offset * 3)
+            self.itemconfigure("main_spd_1_b", text=int((show_speed+10) % 100 // 10))
+        
+        else:
+            self.coords("main_spd_0_t", self.center_width - self.size * 16, self.center_height)
+            self.coords("main_spd_1_t", self.center_width - self.size * 17.7, self.center_height)
+            self.itemconfigure("main_spd_0_b", text='')
+            self.itemconfigure("main_spd_1_b", text='')
 
     def draw_altimeter(self):
         """绘制高度表"""
@@ -276,15 +308,15 @@ class FlightInstrumentCanvas(tk.Canvas):
             self.center_height + self.size * 1.5 + 3,
             self.center_width + self.size * 24,
             self.center_height + self.size * 19,
-            self.center_width + self.size * 32,
+            self.center_width + self.size * 31,
             self.center_height + self.size * 19,
-            self.center_width + self.size * 32,
+            self.center_width + self.size * 31,
             self.center_height - self.size * 15,
             self.center_width + self.size * 24,
             self.center_height - self.size * 15,
             self.center_width + self.size * 24,
             self.center_height - self.size * 1.5 - 3,
-            fill="black",
+            fill=BLACK_COLOR,
             tags="alt_base"
         )
         self.create_rectangle(
@@ -381,20 +413,21 @@ class FlightInstrumentCanvas(tk.Canvas):
             fill=self.fg_color,
             tags="main_alt_3"
         )
-        self.create_rectangle(
-            arrow_center_width,
-            arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
-            arrow_center_width - self.size * 9.5,
-            arrow_center_height + self.size * 4,
-            fill=BLACK_COLOR,
-        )
-        self.create_rectangle(
-            arrow_center_width,
-            arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
-            arrow_center_width - self.size * 9.5,
-            arrow_center_height - self.size * 4,
-            fill=BLACK_COLOR,
-        )
+        if ROLLING:
+            self.create_rectangle(
+                arrow_center_width,
+                arrow_center_height + self.size * 1.5 + LINE_WIDTH/2,
+                arrow_center_width - self.size * 9.5,
+                arrow_center_height + self.size * 4,
+                fill=BLACK_COLOR,
+            )
+            self.create_rectangle(
+                arrow_center_width,
+                arrow_center_height - self.size * 1.5 - LINE_WIDTH/2,
+                arrow_center_width - self.size * 9.5,
+                arrow_center_height - self.size * 4,
+                fill=BLACK_COLOR,
+            )
 
     def update_altimeter(self):
         """更新高度表"""
@@ -423,20 +456,27 @@ class FlightInstrumentCanvas(tk.Canvas):
 
         self.itemconfigure("main_alt", text=int(show_altitude))
 
-        # Calculate the rolling effect for the last two digits
-        offset = show_altitude % 1
-        self.coords("main_alt_0_t", self.center_width + self.size * 21.5, self.center_height + offset * 30)
         self.itemconfigure("main_alt_0_t", text=int(show_altitude % 10))
-        self.coords("main_alt_0_b", self.center_width + self.size * 21.5, self.center_height - self.size * 2.6 + offset * 30)
-        self.itemconfigure("main_alt_0_b", text=int((show_altitude + 1) % 10))
-
-        offset = show_altitude - show_altitude // 10 * 10
-        self.coords("main_alt_1_t", self.center_width + self.size * 19.8, self.center_height + offset * 3)
         self.itemconfigure("main_alt_1_t", text=int((show_altitude // 10) % 10))
-        self.coords("main_alt_1_b", self.center_width + self.size * 19.8, self.center_height - self.size * 2.6 + offset * 3)
-        self.itemconfigure("main_alt_1_b", text=int((show_altitude // 10 + 1) % 10))
         self.itemconfigure("main_alt_2", text=int((show_altitude // 100) % 10))
         self.itemconfigure("main_alt_3", text=int((show_altitude // 1000) % 10))
+
+        if ROLLING:
+            offset = show_altitude % 1
+            self.coords("main_alt_0_t", self.center_width + self.size * 21.5, self.center_height + offset * 30)
+            self.coords("main_alt_0_b", self.center_width + self.size * 21.5, self.center_height - self.size * 2.6 + offset * 30)
+            self.itemconfigure("main_alt_0_b", text=int((show_altitude + 1) % 10))
+
+            offset = show_altitude - show_altitude // 10 * 10
+            self.coords("main_alt_1_t", self.center_width + self.size * 19.8, self.center_height + offset * 3)
+            self.coords("main_alt_1_b", self.center_width + self.size * 19.8, self.center_height - self.size * 2.6 + offset * 3)
+            self.itemconfigure("main_alt_1_b", text=int((show_altitude // 10 + 1) % 10))
+
+        else:
+            self.coords("main_alt_0_t", self.center_width + self.size * 21.5, self.center_height)
+            self.coords("main_alt_1_t", self.center_width + self.size * 19.8, self.center_height)
+            self.itemconfigure("main_alt_0_b", text='')
+            self.itemconfigure("main_alt_1_b", text='')
     
     def draw_horizon(self): #先留一会
         """绘制地平线"""
@@ -526,15 +566,14 @@ class FlightInstrumentCanvas(tk.Canvas):
 
     def draw_horizon(self):
         """绘制地平线"""
-        # Draw the initial horizon line extended beyond the screen width
-        self.horizon_line = self.create_line(
+        self.create_line(
             -SCRN_WIDTH,
             self.center_height,
             2 * SCRN_WIDTH,
             self.center_height,
             fill=self.fg_color,
             width=LINE_WIDTH,
-            tags="horizon"
+            tags=("horizon", "horizon_line")
         )
 
     def update_horizon(self):
@@ -550,7 +589,7 @@ class FlightInstrumentCanvas(tk.Canvas):
         y2 = self.center_height + 2 * SCRN_WIDTH * math.sin(roll_angle) - pitch_offset
 
         # Move and rotate the horizon line based on pitch and roll
-        self.coords(self.horizon_line, x1, y1, x2, y2)
+        self.coords("horizon_line", x1, y1, x2, y2)
 
         self.delete("hdg_line")
         show_hdg = self.heading
@@ -559,17 +598,22 @@ class FlightInstrumentCanvas(tk.Canvas):
             x = (x1 + x2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.cos(roll_angle)
             y = (y1 + y2) / 2 + (cur_hdg - show_hdg) * SCRN_WIDTH / 60 * math.sin(roll_angle)
 
-            self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), width=LINE_WIDTH, fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
+            self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), smooth=True, width=LINE_WIDTH, fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
             
             self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360//10, font=(FONT, 18), fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
 
             cur_hdg += 10
-            # cur_hdg %= 360
         
         self.tag_lower("horizon", "alt_base")
 
     def draw_heading_wheel(self):
-        pass
+        self.create_oval(
+            self.center_width - self.size * 12.2,
+            self.center_height + self.size * 12.8,
+            self.center_width + self.size * 12.2,
+            self.center_height + self.size * 37.2,
+            fill=BLACK_COLOR
+        )
 
     def update_heading_wheel(self):
         self.delete("hdg_whl")
@@ -600,6 +644,26 @@ class FlightInstrumentCanvas(tk.Canvas):
                     fill=self.fg_color,
                     tags="hdg_whl"
                 )
+                self.create_polygon(
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size 
+                        - 1.3 * self.size * math.cos(math.radians(cur_hdg - show_hdg)) + 1 * self.size * math.sin(math.radians(cur_hdg - show_hdg)),
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        - 1.3 * self.size * math.sin(math.radians(cur_hdg - show_hdg)) - 1 * self.size * math.cos(math.radians(cur_hdg - show_hdg)),
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size 
+                        + 1.3 * self.size * math.cos(math.radians(cur_hdg - show_hdg)) + 1 * self.size * math.sin(math.radians(cur_hdg - show_hdg)),
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        + 1.3 * self.size * math.sin(math.radians(cur_hdg - show_hdg)) - 1 * self.size * math.cos(math.radians(cur_hdg - show_hdg)),
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        + 1.3 * self.size * math.cos(math.radians(cur_hdg - show_hdg)) - 1 * self.size * math.sin(math.radians(cur_hdg - show_hdg)),
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        + 1.3 * self.size * math.sin(math.radians(cur_hdg - show_hdg)) + 1 * self.size * math.cos(math.radians(cur_hdg - show_hdg)),
+                    self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        - 1.3 * self.size * math.cos(math.radians(cur_hdg - show_hdg)) - 1 * self.size * math.sin(math.radians(cur_hdg - show_hdg)),
+                    wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size
+                        - 1.3 * self.size * math.sin(math.radians(cur_hdg - show_hdg)) + 1 * self.size * math.cos(math.radians(cur_hdg - show_hdg)),
+                    fill=BLACK_COLOR,
+                    tags="hdg_whl"
+                )
                 self.create_text(
                     self.center_width + math.sin(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size,
                     wheel_center - math.cos(math.radians(cur_hdg - show_hdg)) * 13.2 * self.size,
@@ -624,10 +688,10 @@ class FlightInstrumentCanvas(tk.Canvas):
     def draw_gspeed_display(self):
         self.create_text(
             self.center_width,
-            self.center_height + self.size * 20,
+            self.center_height + self.size * 19.4,
             text=000,
             fill=self.fg_color,
-            font=(FONT, int(-SIZE * 2)),
+            font=(FONT, int(-SIZE * 3)),
             tags="gspeed"
         )
     
@@ -748,7 +812,7 @@ if __name__ == "__main__":
             vspeed=random.randint(0, 1000),
             altitude=random.randint(0, 1000000)/100,
             pitch=random.randint(-30, 30),
-            roll=random.randint(-90, 90),
+            roll=random.randint(-180, 180),
             gspeed=random.randint(0,999),
             g_force=random.randint(0, 100) / 10,
             ffl_secs=random.randint(0, 1200),
