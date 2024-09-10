@@ -600,7 +600,7 @@ class FlightInstrumentCanvas(tk.Canvas):
 
             self.create_line(x, y, x + 15 * math.sin(roll_angle), y - 15 * math.cos(roll_angle), smooth=True, width=LINE_WIDTH, fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
             
-            self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360//10, font=(FONT, 18), fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
+            self.create_text(x + 20 * math.sin(roll_angle), y - 20 * math.cos(roll_angle) - 10, text=cur_hdg%360//10, font=(FONT, int(-self.size * 2)), fill=GREEN_COLOR, tags=("hdg_line", "horizon"))
 
             cur_hdg += 10
         
